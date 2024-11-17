@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whack-a-Hamster</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .hole {
+            position: relative;
+            overflow: hidden;
+            height: 100px;
+            border-radius: 50%;
+            background: #6B4423;
+            cursor: pointer;
+        }
+        
+        .hamster {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: bottom 0.3s;
+            background: url('https://images.unsplash.com/photo-1425082661705-1834bfd09dca?crop=entropy&cs=tinysrgb&fit=crop&fm=jpg&h=70&w=70') center/cover;
+            border-radius: 50%;
+        }
+
+        .hamster.up {
+            bottom: 0;
+        }
+
+        .hammer {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .hammer.bonk {
+            transform: rotate(-20deg);
+        }
+
+        @media (max-width: 640px) {
+            .hole {
+                height: 80px;
+            }
+            .hamster {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-blue-100 min-h-screen flex flex-col items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Whack-a-Hamster</h1>
+            <div class="flex justify-between items-center px-4">
+                <p class="text-xl font-semibold text-gray-600">Score: <span id="score">0</span></p>
+                <p class="text-xl font-semibold text-gray-600">Time: <span id="time">30</span>s</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4 mb-6">
+            <div class="hole" data-hole="0"><div class="hamster"></div></div>
+            <div class="hole" data-hole="1"><div class="hamster"></div></div>
+            <div class="hole" data-hole="2"><div class="hamster"></div></div>
+            <div class="hole" data-hole="3"><div class="hamster"></div></div>
+            <div class="hole" data-hole="4"><div class="hamster"></div></div>
+        </div>
+
+        <div class="text-center">
+            <button id="startButton" class="bg-green-500 text-white px-6 py-2 rounded-full text-lg font-semibold hover:bg-green-600 transition-colors">
+                Start Game
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const holes = document.querySelectorAll('.hole');
+        const hamsters = document.querySelectorAll('.hamster');
+        const scoreDisplay = document.getElementById('score');
+        const timeDisplay = document.getElementById('time');
+        const startButton = document.getElementById('startButton');
+        
+        let score = 0;
+        let timeLeft = 30;
+        let gameInterval;
+        let isPlaying = false;
+
+        function randomTime(min, max) {
+            return Math.round(Math.random() * (max - min) + min);
+        }
+
+        function randomHole(holes) {
+            const index = Math.floor(Math.random() * holes.length);
+            const hole = holes[index];
+            return hole;
+        }
+
+        function peep() {
+            const time = randomTime(500, 1500);
+            const hole = randomHole(holes);
+            const hamster = hole.querySelector('.hamster');
+            
+            hamster.classList.add('up');
+            
+            setTimeout(() => {
+                hamster.classList.remove('up');
+                if (isPlaying) peep();
+            }, time);
+        }
+
+        function startGame() {
+            if (isPlaying) return;
+            
+            score = 0;
+            timeLeft = 30;
+            isPlaying = true;
+            scoreDisplay.textContent = score;
+            timeDisplay.textContent = timeLeft;
+            startButton.disabled = true;
+            startButton.classList.add('opacity-50');
+            
+            peep();
+            
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timeDisplay.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(gameInterval);
+                    isPlaying = false;
+                    startButton.disabled = false;
+                    startButton.classList.remove('opacity-50');
+                    alert(`Game Over! Your score: ${score}`);
+                }
+            }, 1000);
+        }
+
+        function bonk(e) {
+            if (!isPlaying) return;
+            if (!e.isTrusted) return;
+            
+            const hamster = this.querySelector('.hamster');
+            if (hamster.classList.contains('up')) {
+                score++;
+                scoreDisplay.textContent = score;
+                hamster.classList.remove('up');
+                
+                // Add bonk effect
+                this.classList.add('hammer');
+                setTimeout(() => this.classList.remove('hammer'), 100);
+                
+                // Add sound effect (optional)
+                const bonkSound = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU');
+                bonkSound.play().catch(() => {});
+            }
+        }
+
+        holes.forEach(hole => hole.addEventListener('click', bonk));
+        startButton.addEventListener('click', startGame);
+
+        // Add touch events for mobile
+        holes.forEach(hole => {
+            hole.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                bonk.call(this, e);
+            });
+        });
+    </script>
+</body>
+</html>
